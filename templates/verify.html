@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPulse — Vérification</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --primary-light: #818cf8;
+      --bg: #0f0e17;
+      --surface: #1a1825;
+      --surface2: #221f35;
+      --border: #2d2a45;
+      --text: #e8e6f0;
+      --muted: #8b89a0;
+      --error: #f87171;
+      --success: #34d399;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(79,70,229,.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(99,102,241,.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0,0,0,.5);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border-radius: .6rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .logo-text { font-size: 1.5rem; font-weight: 700; }
+    .icon-wrap {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .icon-wrap .envelope {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: .5rem;
+    }
+    h1 { text-align: center; font-size: 1.25rem; font-weight: 600; margin-bottom: .4rem; }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: .88rem;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+    .subtitle b { color: var(--primary-light); }
+    .code-inputs {
+      display: flex;
+      gap: .5rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .code-inputs input {
+      width: 48px; height: 56px;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: .6rem;
+      color: var(--text);
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+      transition: border-color .2s;
+      caret-color: transparent;
+    }
+    .code-inputs input:focus { border-color: var(--primary); }
+    .code-inputs input.filled { border-color: var(--primary-light); }
+    .btn {
+      width: 100%; padding: .8rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: .75rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .alert {
+      padding: .75rem 1rem;
+      border-radius: .6rem;
+      font-size: .88rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .alert.error   { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.3); color: var(--error); }
+    .alert.success { background: rgba(52,211,153,.1);  border: 1px solid rgba(52,211,153,.3);  color: var(--success); }
+    .resend {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+    .resend a {
+      color: var(--primary-light);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .resend a:hover { text-decoration: underline; }
+    .resend a.disabled { opacity: .4; pointer-events: none; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">📊</div>
+      <div class="logo-text">DataPulse</div>
+    </div>
+
+    <div class="icon-wrap">
+      <span class="envelope">📧</span>
+    </div>
+
+    <h1>Vérifiez votre email</h1>
+    <p class="subtitle">
+      Nous avons envoyé un code à 6 chiffres à<br>
+      <b id="emailDisplay">{{ email }}</b>
+    </p>
+
+    <div class="alert error"   id="alertError"></div>
+    <div class="alert success" id="alertSuccess"></div>
+
+    <div class="code-inputs" id="codeInputs">
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+      <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+    </div>
+
+    <button class="btn" id="verifyBtn" disabled>Vérifier</button>
+
+    <div class="resend">
+      Pas reçu ? <a id="resendLink" onclick="resendCode()">Renvoyer le code</a>
+      <span id="resendTimer" style="display:none"> (<span id="countdown">60</span>s)</span>
+    </div>
+  </div>
+
+  <script>
+    const email = {{ email | tojson }};
+    const inputs = Array.from(document.querySelectorAll('.code-inputs input'));
+    const verifyBtn = document.getElementById('verifyBtn');
+
+    function getCsrf() {
+      return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token='))?.split('=')[1] || '';
+    }
+    function showError(msg) {
+      const el = document.getElementById('alertError');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('alertSuccess').style.display = 'none';
+      // Shake inputs
+      document.getElementById('codeInputs').style.animation = 'none';
+      setTimeout(() => {
+        inputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
+        inputs[0].focus();
+        updateBtn();
+      }, 400);
+    }
+    function showSuccess(msg) {
+      const el = document.getElementById('alertSuccess');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('alertError').style.display = 'none';
+    }
+    function getCode() { return inputs.map(i => i.value).join(''); }
+    function updateBtn() {
+      const code = getCode();
+      verifyBtn.disabled = code.length !== 6;
+    }
+
+    inputs.forEach((input, idx) => {
+      input.addEventListener('input', e => {
+        const val = input.value.replace(/\D/g, '');
+        input.value = val ? val[0] : '';
+        input.classList.toggle('filled', !!input.value);
+        if (val && idx < 5) inputs[idx + 1].focus();
+        updateBtn();
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          inputs[idx - 1].value = '';
+          inputs[idx - 1].classList.remove('filled');
+          inputs[idx - 1].focus();
+          updateBtn();
+        }
+        if (e.key === 'ArrowLeft' && idx > 0) inputs[idx - 1].focus();
+        if (e.key === 'ArrowRight' && idx < 5) inputs[idx + 1].focus();
+      });
+      input.addEventListener('paste', e => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+        pasted.split('').slice(0, 6).forEach((ch, i) => {
+          if (inputs[i]) { inputs[i].value = ch; inputs[i].classList.add('filled'); }
+        });
+        const next = Math.min(pasted.length, 5);
+        inputs[next].focus();
+        updateBtn();
+      });
+    });
+
+    inputs[0].focus();
+
+    verifyBtn.addEventListener('click', async () => {
+      const code = getCode();
+      if (code.length !== 6) return;
+      verifyBtn.disabled = true;
+      verifyBtn.innerHTML = '<span class="spinner"></span> Vérification…';
+      try {
+        const res = await fetch('/api/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+          body: JSON.stringify({ email, code }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error || 'Erreur.'); return; }
+        showSuccess('Compte créé ! Redirection…');
+        setTimeout(() => { window.location.href = '/'; }, 800);
+      } catch(err) {
+        showError('Erreur réseau.');
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Vérifier';
+      }
+    });
+
+    // Resend cooldown
+    let cooldown = false;
+    async function resendCode() {
+      if (cooldown) return;
+      cooldown = true;
+      const link = document.getElementById('resendLink');
+      const timerEl = document.getElementById('resendTimer');
+      const countdownEl = document.getElementById('countdown');
+      link.classList.add('disabled');
+      timerEl.style.display = 'inline';
+      let secs = 60;
+      countdownEl.textContent = secs;
+      const interval = setInterval(() => {
+        secs--;
+        countdownEl.textContent = secs;
+        if (secs <= 0) {
+          clearInterval(interval);
+          link.classList.remove('disabled');
+          timerEl.style.display = 'none';
+          cooldown = false;
+        }
+      }, 1000);
+
+      try {
+        const res = await fetch('/api/resend-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) showError(data.error || 'Erreur lors du renvoi.');
+        else showSuccess('Nouveau code envoyé !');
+      } catch(err) {
+        showError('Erreur réseau.');
+      }
+    }
+  </script>
+</body>
+</html>

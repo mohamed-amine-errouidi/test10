@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataPulse — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root[data-theme="dark"] {
+    --bg:#050508;--surface:#0d0d14;--surface2:#13131e;--border:rgba(255,255,255,0.07);
+    --accent:#7c6af7;--accent2:#f7a26a;--accent3:#6af7c8;--accent4:#f76a6a;
+    --text:#f0effe;--muted:#6b6980;--danger:#f76a6a;
+    --alert-bg:rgba(247,106,106,0.1);--alert-border:rgba(247,106,106,0.3);
+    --growth-pos:#6af7c8;--growth-neg:#f76a6a;
+  }
+  :root[data-theme="light"] {
+    --bg:#f4f3ff;--surface:#ffffff;--surface2:#f0effe;--border:rgba(0,0,0,0.08);
+    --accent:#5b47e0;--accent2:#d4762a;--accent3:#1aac7a;--accent4:#d43a3a;
+    --text:#1a1830;--muted:#8e8aa8;--danger:#d43a3a;
+    --alert-bg:rgba(212,58,58,0.08);--alert-border:rgba(212,58,58,0.25);
+    --growth-pos:#1aac7a;--growth-neg:#d43a3a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;transition:background .3s,color .3s}
+  nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 48px;background:rgba(5,5,8,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);transition:background .3s}
+  [data-theme="light"] nav{background:rgba(244,243,255,0.88)}
+  .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;display:flex;align-items:center;gap:9px}
+  .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .nav-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .nav-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);border:1px solid var(--border);padding:4px 12px;border-radius:20px}
+  .btn-icon{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:10px;cursor:pointer;font-size:14px;transition:border-color .2s,color .2s}
+  .btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-new{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border);color:var(--text);padding:7px 16px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-decoration:none;transition:border-color .2s,color .2s}
+  .btn-new:hover{border-color:var(--accent);color:var(--accent)}
+  .main{max-width:1200px;margin:0 auto;padding:40px 32px 60px}
+  .alert-banner{display:none;align-items:center;gap:12px;background:var(--alert-bg);border:1px solid var(--alert-border);border-radius:12px;padding:14px 20px;margin-bottom:20px;color:var(--accent4);font-size:13px;animation:cardIn .4s ease}
+  .alert-banner.show{display:flex}
+  .page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+  .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:30px;letter-spacing:-1px}
+  .page-sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .export-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .export-btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 18px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
+  .export-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:22px 24px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s,background .3s;animation:cardIn .5s ease backwards}
+  .kpi-card:hover{transform:translateY(-2px)}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-accent,var(--accent));opacity:.8}
+  @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .kpi-card:nth-child(1){animation-delay:.1s;--card-accent:var(--accent)}
+  .kpi-card:nth-child(2){animation-delay:.2s;--card-accent:var(--accent2)}
+  .kpi-card:nth-child(3){animation-delay:.3s;--card-accent:var(--accent3)}
+  .kpi-card:nth-child(4){animation-delay:.4s;--card-accent:var(--accent4)}
+  .kpi-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .kpi-value{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-1px;line-height:1;margin-bottom:6px}
+  .kpi-sub{font-size:12px;color:var(--muted)}
+  .kpi-growth{display:inline-flex;align-items:center;gap:3px;font-family:'DM Mono',monospace;font-size:11px;padding:2px 8px;border-radius:20px;margin-top:6px;font-weight:500}
+  .kpi-growth.pos{background:rgba(106,247,200,.12);color:var(--growth-pos)}
+  .kpi-growth.neg{background:rgba(247,106,106,.12);color:var(--growth-neg)}
+  .kpi-growth.neutral{background:rgba(107,105,128,.12);color:var(--muted)}
+  .charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;animation:cardIn .5s ease .5s backwards;transition:background .3s}
+  .chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+  .chart-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px}
+  .chart-sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .chart-badge{font-family:'DM Mono',monospace;font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.2);color:var(--accent)}
+  .monthly-section{margin-top:28px}
+  .multi-upload-panel{background:var(--surface2);border:2px dashed var(--border);border-radius:16px;padding:20px 24px;margin-bottom:24px;display:none;animation:cardIn .3s ease}
+  .multi-upload-panel.show{display:block}
+  .merge-panel{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:24px;display:none;animation:cardIn .3s ease}
+  .merge-panel.show{display:block}
+  .panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:12px}
+  .multi-drop-zone{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;color:var(--muted);font-size:13px}
+  .multi-drop-zone:hover,.multi-drop-zone.drag-over{border-color:var(--accent);color:var(--accent)}
+  .multi-file-list{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .multi-file-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  .ok{color:var(--accent3)}.err{color:var(--accent4)}
+  .btn-submit{margin-top:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 20px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:opacity .2s}
+  .btn-submit:hover{opacity:.85}.btn-submit:disabled{opacity:.5;cursor:not-allowed}
+  .btn-cancel{margin-left:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:9px 16px;border-radius:10px;cursor:pointer;font-size:13px}
+  .history-section{margin-top:32px}
+  .section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .section-badge{font-family:'DM Mono',monospace;font-size:10px;padding:2px 9px;border-radius:20px;background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.2);color:var(--accent)}
+  .history-table{width:100%;border-collapse:collapse;font-size:13px}
+  .history-table th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 14px;border-bottom:1px solid var(--border)}
+  .history-table td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text)}
+  .history-table tr:last-child td{border-bottom:none}
+  .history-table tbody tr{cursor:pointer;transition:background .15s}
+  .history-table tbody tr:hover{background:rgba(124,106,247,.05)}
+  .history-table tbody tr.active-row{background:rgba(124,106,247,.1)}
+  .history-table tbody tr.merge-selected{background:rgba(247,162,106,.06);outline:1px solid rgba(247,162,106,.3)}
+  .status-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px}
+  .status-success{background:rgba(106,247,200,.1);color:var(--accent3);border:1px solid rgba(106,247,200,.2)}
+  .status-error{background:rgba(247,106,106,.1);color:var(--accent4);border:1px solid rgba(247,106,106,.2)}
+  .status-pending{background:rgba(247,162,106,.1);color:var(--accent2);border:1px solid rgba(247,162,106,.2)}
+  .taux-low{color:var(--accent4)!important;font-weight:600}
+  #no-data-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--muted);text-align:center}
+  @media(max-width:900px){nav{padding:16px 20px}.main{padding:24px 16px 40px}.kpi-grid{grid-template-columns:repeat(2,1fr)}.charts-row{grid-template-columns:1fr}}
+  @media(max-width:540px){.kpi-grid{grid-template-columns:1fr 1fr}.page-header{flex-direction:column;align-items:flex-start;gap:14px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="logo-dot"></div>DataPulse</div>
+  <div class="nav-right">
+    <div class="nav-meta" id="nav-meta">—</div>
+    <span style="color:var(--muted);font-size:.85rem">👤 {{ username }}</span>
+    <button class="btn-icon" id="themeToggle" title="Mode sombre/clair" onclick="toggleTheme()">☀️</button>
+    <button class="btn-icon" title="Import multi-fichiers" onclick="togglePanel('multiPanel')">📂</button>
+    <button class="btn-icon" title="Fusionner des imports" onclick="toggleMerge()">🔀</button>
+    <button class="btn-icon" title="Comparaison mensuelle" onclick="showMonthly()">📅</button>
+    <a href="/" class="btn-new">↑ Nouveau fichier</a>
+    <a href="/logout" style="color:var(--danger);font-size:.85rem;text-decoration:none;padding:.3rem .65rem;border:1px solid var(--danger);border-radius:.5rem;opacity:.7;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.7">⏻</a>
+  </div>
+</nav>
+
+<div id="no-data-screen" style="display:none">
+  <div style="font-size:48px">📭</div>
+  <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;color:var(--text)">Aucune donnée disponible</div>
+  <div>Importez un fichier depuis la page d'accueil</div>
+  <a href="/" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:13px;margin-top:8px">→ Importer un fichier</a>
+</div>
+
+<div class="main" id="dashboard-content">
+
+  <!-- Alert -->
+  <div class="alert-banner" id="alertBanner">
+    <span style="font-size:20px">⚠️</span>
+    <span id="alertText"></span>
+    <button onclick="document.getElementById('alertBanner').classList.remove('show')" style="margin-left:auto;background:none;border:none;color:var(--accent4);cursor:pointer;font-size:16px">✕</button>
+  </div>
+
+  <!-- Multi-file upload panel -->
+  <div class="multi-upload-panel" id="multiPanel">
+    <div class="panel-title">📂 Import multi-fichiers</div>
+    <div class="multi-drop-zone" id="multiDropZone" onclick="document.getElementById('multiFileInput').click()">
+      Cliquez ou glissez plusieurs fichiers ici (.xlsx, .xls, .csv)
+      <input type="file" id="multiFileInput" multiple accept=".xlsx,.xls,.csv" style="display:none" onchange="handleMultiFiles(this.files)">
+    </div>
+    <div class="multi-file-list" id="multiFileList"></div>
+    <button class="btn-submit" id="btnMultiSubmit" disabled onclick="submitMultiFiles()">⬆ Importer tous</button>
+  </div>
+
+  <!-- Merge panel -->
+  <div class="merge-panel" id="mergePanel">
+    <div class="panel-title">🔀 Fusionner des imports en un rapport consolidé</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Cochez les imports dans l'historique, puis cliquez sur <strong style="color:var(--accent2)">Fusionner</strong>.</div>
+    <div id="mergeSelected" style="font-size:12px;color:var(--muted);margin-bottom:10px">Aucun import sélectionné</div>
+    <button class="btn-submit" id="btnMerge" disabled onclick="submitMerge()" style="background:var(--accent2)">🔀 Fusionner</button>
+    <button class="btn-cancel" onclick="cancelMerge()">✕ Annuler</button>
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Vue d'ensemble</div>
+      <div class="page-sub" id="report-meta">Chargement…</div>
+    </div>
+    <div class="export-btns">
+      <button class="export-btn" onclick="exportPdf()">↓ PDF</button>
+      <button class="export-btn" onclick="exportExcel()">↓ Excel</button>
+      <button class="export-btn" onclick="exportChart()">↓ PNG</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">💰 Chiffre d'Affaires</div>
+      <div class="kpi-value" id="kpi-ca">—</div>
+      <div class="kpi-sub">Commandes livrées uniquement</div>
+      <div id="growth-ca"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📦 Total Commandes</div>
+      <div class="kpi-value" id="kpi-cmd">—</div>
+      <div class="kpi-sub">Toutes transactions</div>
+      <div id="growth-cmd"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🛒 Panier Moyen</div>
+      <div class="kpi-value" id="kpi-panier">—</div>
+      <div class="kpi-sub">Par commande livrée</div>
+      <div id="growth-panier"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">✅ Taux de Livraison</div>
+      <div class="kpi-value" id="kpi-taux">—</div>
+      <div class="kpi-sub" id="kpi-taux-sub">Livré / Total</div>
+      <div id="growth-taux"></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">Évolution du CA</div><div class="chart-sub">Chiffre d'affaires journalier (livrés)</div></div>
+        <div class="chart-badge">Line</div>
+      </div>
+      <div style="position:relative;height:240px"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">Statuts</div><div class="chart-sub">Répartition des commandes</div></div>
+        <div class="chart-badge">Pie</div>
+      </div>
+      <div style="position:relative;height:240px"><canvas id="statusChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Monthly comparison (hidden by default) -->
+  <div class="monthly-section" id="monthlySection" style="display:none">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div><div class="chart-title">📅 Comparaison mois par mois</div><div class="chart-sub" id="monthlySub">CA et taux de livraison par mois</div></div>
+        <button onclick="document.getElementById('monthlySection').style.display='none'" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">✕</button>
+      </div>
+      <div style="position:relative;height:260px"><canvas id="monthlyChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="section-title">Historique des imports <span class="section-badge" id="history-count">0</span></div>
+    <div style="display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <input type="date" id="filterFrom" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem .75rem;border-radius:.5rem;font-size:.85rem" onchange="loadHistory()">
+      <span style="color:var(--muted);font-size:.85rem">→</span>
+      <input type="date" id="filterTo" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:.4rem .75rem;border-radius:.5rem;font-size:.85rem" onchange="loadHistory()">
+      <button onclick="document.getElementById('filterFrom').value='';document.getElementById('filterTo').value='';loadHistory()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:.4rem .75rem;border-radius:.5rem;font-size:.85rem;cursor:pointer">✕ Reset</button>
+      <div style="margin-left:auto;font-size:.82rem;color:var(--muted)" id="compareHint"></div>
+    </div>
+    <div class="chart-card" style="padding:0;overflow:hidden">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th id="mergeCheckHeader" style="display:none;width:36px"></th>
+            <th>Fichier</th><th>Date</th><th>Lignes</th><th>CA (DH)</th><th>Taux livraison</th><th>Statut</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="pagination" style="display:flex;gap:.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap"></div>
+  </div>
+
+</div>
+
+<script>
+  function getCsrf(){return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrf_token='))?.split('=')[1]||''}
+  function fmtDH(val){if(val>=1000000)return(val/1000000).toFixed(1)+'M DH';if(val>=1000)return(val/1000).toFixed(1)+'k DH';return val.toFixed(0)+' DH'}
+  function growthBadge(pct){if(pct===null||pct===undefined)return '';const cls=pct>0?'pos':pct<0?'neg':'neutral';const arr=pct>0?'▲':pct<0?'▼':'—';return `<span class="kpi-growth ${cls}">${arr} ${Math.abs(pct)}%</span>`}
+  function isDark(){return document.documentElement.getAttribute('data-theme')==='dark'}
+  function gridColor(){return isDark()?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)'}
+  function tooltipBg(){return isDark()?'#0d0d14':'#ffffff'}
+  function tooltipText(){return isDark()?'#f0effe':'#1a1830'}
+
+  let charts={},currentImportId=null,compareImportId=null,historyPage=1,mergeMode=false,mergeIds=new Set(),multiFiles=[];
+  const STATUS_COLORS={'Livré':'#6af7c8','Refusé':'#f76a6a','Retourné':'#f7a26a','Annulé':'#6b6980','En cours':'#6ab5f7'};
+
+  // Theme
+  const savedTheme=localStorage.getItem('dp_theme')||'dark';
+  document.documentElement.setAttribute('data-theme',savedTheme);
+  function updateThemeIcon(){document.getElementById('themeToggle').textContent=isDark()?'☀️':'🌙'}
+  updateThemeIcon();
+  function toggleTheme(){
+    document.documentElement.setAttribute('data-theme',isDark()?'light':'dark');
+    localStorage.setItem('dp_theme',isDark()?'light':'dark');
+    updateThemeIcon();
+    Object.values(charts).forEach(c=>{if(c)c.destroy()});
+    charts={};
+    if(currentImportId)loadImport(currentImportId);
+  }
+  function setChartDefaults(){Chart.defaults.color=isDark()?'#6b6980':'#8e8aa8';Chart.defaults.font.family="'DM Mono',monospace";Chart.defaults.font.size=11}
+
+  // Alert
+  function showAlert(msg){document.getElementById('alertText').textContent=msg;document.getElementById('alertBanner').classList.add('show')}
+  function hideAlert(){document.getElementById('alertBanner').classList.remove('show')}
+
+  // Render
+  function renderDashboard(data){
+    document.getElementById('nav-meta').textContent=data.import_name||(data.merged?'Rapport fusionné':'—');
+    if(data.merged){
+      document.getElementById('report-meta').textContent=`Rapport fusionné · ${data.total_rows} lignes · ${(data.import_names||[]).join(', ')}`;
+    } else {
+      document.getElementById('report-meta').textContent=`${data.total_rows} lignes · importé le ${data.import_date||''}`;
+    }
+    document.getElementById('kpi-ca').textContent=fmtDH(data.kpis.chiffre_affaires);
+    document.getElementById('kpi-cmd').textContent=data.kpis.total_commandes.toLocaleString('fr');
+    document.getElementById('kpi-panier').textContent=fmtDH(data.kpis.panier_moyen);
+    document.getElementById('kpi-taux').textContent=data.kpis.taux_livraison+'%';
+    hideAlert();
+    if(data.kpis.taux_livraison<70){
+      showAlert(`Taux de livraison bas : ${data.kpis.taux_livraison}% (seuil 70%). Vérifiez vos commandes non livrées.`);
+      document.getElementById('kpi-taux').style.color='var(--accent4)';
+      document.getElementById('kpi-taux-sub').textContent='⚠️ Taux faible — seuil 70%';
+    } else {
+      document.getElementById('kpi-taux').style.color='';
+      document.getElementById('kpi-taux-sub').textContent='Livré / Total';
+    }
+    ['ca','cmd','panier','taux'].forEach(k=>document.getElementById('growth-'+k).innerHTML='');
+    setChartDefaults();
+    buildTrendChart(data.trend_data);
+    buildStatusChart(data.status_breakdown);
+  }
+
+  async function loadGrowth(id){
+    try{
+      const res=await fetch(`/import/${id}/growth`);const data=await res.json();
+      if(!data.has_prev)return;const g=data.growth;
+      document.getElementById('growth-ca').innerHTML=growthBadge(g.chiffre_affaires);
+      document.getElementById('growth-cmd').innerHTML=growthBadge(g.total_commandes);
+      document.getElementById('growth-panier').innerHTML=growthBadge(g.panier_moyen);
+      document.getElementById('growth-taux').innerHTML=growthBadge(g.taux_livraison);
+    }catch(e){}
+  }
+
+  function buildTrendChart(d){
+    if(charts.trend)charts.trend.destroy();
+    const ctx=document.getElementById('trendChart').getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,0,240);
+    grad.addColorStop(0,'rgba(124,106,247,0.3)');grad.addColorStop(1,'rgba(124,106,247,0)');
+    charts.trend=new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[{label:'CA (DH)',data:d.values,borderColor:'#7c6af7',backgroundColor:grad,borderWidth:2,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:'#7c6af7',fill:true,tension:0.4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:tooltipBg(),borderColor:'rgba(124,106,247,0.3)',borderWidth:1,titleColor:tooltipText(),bodyColor:'#6b6980',callbacks:{label:c=>' '+fmtDH(c.parsed.y)}}},scales:{x:{grid:{color:gridColor()},ticks:{maxTicksLimit:8}},y:{grid:{color:gridColor()},ticks:{callback:v=>fmtDH(v)}}}}});
+  }
+
+  function buildStatusChart(d){
+    if(charts.status)charts.status.destroy();
+    const ctx=document.getElementById('statusChart').getContext('2d');
+    const bg=d.labels.map(l=>STATUS_COLORS[l]||'#6b6980');
+    charts.status=new Chart(ctx,{type:'pie',data:{labels:d.labels,datasets:[{data:d.values,backgroundColor:bg,borderColor:isDark()?'#050508':'#f4f3ff',borderWidth:3,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyleWidth:8}},tooltip:{backgroundColor:tooltipBg(),borderColor:'rgba(124,106,247,0.3)',borderWidth:1,titleColor:tooltipText(),bodyColor:'#6b6980',callbacks:{label:c=>{const tot=c.dataset.data.reduce((a,b)=>a+b,0);return ` ${c.label}: ${c.parsed} (${((c.parsed/tot)*100).toFixed(1)}%)`}}}}}});
+  }
+
+  async function showMonthly(){
+    const sec=document.getElementById('monthlySection');sec.style.display='block';sec.scrollIntoView({behavior:'smooth',block:'nearest'});
+    try{
+      const res=await fetch('/compare/monthly');const data=await res.json();
+      if(!data.labels||!data.labels.length){document.getElementById('monthlySub').textContent='Aucune donnée mensuelle disponible.';return}
+      document.getElementById('monthlySub').textContent=`${data.labels.length} mois · CA et taux de livraison`;
+      if(charts.monthly)charts.monthly.destroy();
+      const ctx=document.getElementById('monthlyChart').getContext('2d');
+      charts.monthly=new Chart(ctx,{type:'bar',data:{labels:data.labels,datasets:[{label:'CA (DH)',data:data.ca,backgroundColor:'rgba(124,106,247,0.7)',borderColor:'#7c6af7',borderWidth:1,yAxisID:'yCA',borderRadius:6},{label:'Taux liv. (%)',data:data.taux,type:'line',borderColor:'#6af7c8',backgroundColor:'rgba(106,247,200,0.08)',borderWidth:2,pointRadius:4,fill:true,tension:0.4,yAxisID:'yTaux'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{padding:16,usePointStyle:true,pointStyleWidth:8}},tooltip:{backgroundColor:tooltipBg(),borderColor:'rgba(124,106,247,0.3)',borderWidth:1,callbacks:{label:c=>c.datasetIndex===0?' '+fmtDH(c.parsed.y):` ${c.parsed.y}%`}}},scales:{x:{grid:{color:gridColor()}},yCA:{type:'linear',position:'left',grid:{color:gridColor()},ticks:{callback:v=>fmtDH(v)}},yTaux:{type:'linear',position:'right',grid:{display:false},min:0,max:100,ticks:{callback:v=>v+'%'}}}}});
+    }catch(e){document.getElementById('monthlySub').textContent='Erreur de chargement.'}
+  }
+
+  async function loadHistory(page){
+    if(page!==undefined)historyPage=page;
+    const df=document.getElementById('filterFrom').value,dt=document.getElementById('filterTo').value;
+    let url=`/history?page=${historyPage}`;if(df)url+=`&date_from=${df}`;if(dt)url+=`&date_to=${dt}`;
+    try{
+      const res=await fetch(url);const data=await res.json();const list=data.items||[];
+      document.getElementById('history-count').textContent=data.total||0;
+      document.getElementById('mergeCheckHeader').style.display=mergeMode?'':'none';
+      const tbody=document.getElementById('history-body');
+      if(!list.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Aucun import enregistré</td></tr>';document.getElementById('pagination').innerHTML='';return}
+      tbody.innerHTML=list.map(imp=>{
+        const tc=imp.taux_livraison!==null&&imp.taux_livraison<70?'taux-low':'';
+        const chk=mergeMode?`<td onclick="event.stopPropagation()"><input type="checkbox" ${mergeIds.has(imp.id)?'checked':''} onchange="toggleMergeId(${imp.id},this.checked)" style="cursor:pointer;accent-color:var(--accent2)"></td>`:'';
+        return `<tr onclick="${mergeMode?`toggleMergeId(${imp.id})`:`loadImport(${imp.id})`}" data-id="${imp.id}" class="${mergeIds.has(imp.id)?'merge-selected':''}">
+          ${chk}
+          <td style="font-family:'DM Mono',monospace;font-size:12px"><span id="name-${imp.id}">${imp.name}</span></td>
+          <td style="color:var(--muted)">${imp.imported_at}</td>
+          <td>${imp.total_rows!=null?imp.total_rows.toLocaleString('fr'):'—'}</td>
+          <td>${imp.chiffre_affaires!=null?fmtDH(imp.chiffre_affaires):'—'}</td>
+          <td class="${tc}">${imp.taux_livraison!=null?imp.taux_livraison+'%'+(imp.taux_livraison<70?' ⚠️':''):'—'}</td>
+          <td><span class="status-badge status-${imp.status==='success'?'success':imp.status==='error'?'error':'pending'}">${imp.status}</span></td>
+          <td style="display:flex;gap:.4rem;flex-wrap:wrap" onclick="event.stopPropagation()">
+            ${imp.has_file?`<a href="/download/${imp.id}" style="color:var(--accent);font-size:11px;text-decoration:none;border:1px solid rgba(124,106,247,0.3);padding:2px 8px;border-radius:6px">↓</a>`:''}
+            <button onclick="renameImport(${imp.id})" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer">✏️</button>
+            <button onclick="compareImport(${imp.id})" style="background:none;border:1px solid rgba(247,162,106,0.4);color:var(--accent2);font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer">⇄</button>
+            <button onclick="deleteImport(${imp.id})" style="background:none;border:1px solid rgba(247,106,106,0.3);color:var(--danger);font-size:11px;padding:2px 8px;border-radius:6px;cursor:pointer">✕</button>
+          </td></tr>`;
+      }).join('');
+      const pag=document.getElementById('pagination');pag.innerHTML='';
+      if(data.pages>1){
+        const bs=(a)=>`background:${a?'var(--accent)':'none'};border:1px solid ${a?'var(--accent)':'var(--border)'};color:${a?'#fff':'var(--muted)'};padding:.35rem .7rem;border-radius:.5rem;cursor:pointer;font-size:.82rem`;
+        if(data.has_prev){const b=document.createElement('button');b.textContent='←';b.style.cssText=bs(false);b.onclick=()=>loadHistory(historyPage-1);pag.appendChild(b)}
+        for(let i=1;i<=data.pages;i++){const b=document.createElement('button');b.textContent=i;b.style.cssText=bs(i===data.current);b.onclick=((p)=>()=>loadHistory(p))(i);pag.appendChild(b)}
+        if(data.has_next){const b=document.createElement('button');b.textContent='→';b.style.cssText=bs(false);b.onclick=()=>loadHistory(historyPage+1);pag.appendChild(b)}
+      }
+    }catch(e){document.getElementById('history-body').innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Impossible de charger l\'historique</td></tr>'}
+  }
+
+  async function deleteImport(id){if(!confirm('Supprimer cet import ?'))return;const res=await fetch(`/import/${id}`,{method:'DELETE',headers:{'X-CSRFToken':getCsrf()}});if(res.ok){loadHistory();if(currentImportId===id)currentImportId=null}else alert('Erreur lors de la suppression.')}
+  async function renameImport(id){const cur=document.getElementById(`name-${id}`)?.textContent||'';const n=prompt('Nouveau nom :',cur);if(!n||n===cur)return;const res=await fetch(`/import/${id}/rename`,{method:'PATCH',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},body:JSON.stringify({name:n})});if(res.ok)loadHistory();else{const d=await res.json();alert(d.error||'Erreur.')}}
+  function compareImport(id){if(!currentImportId){alert('Chargez d\'abord un import principal.');return}if(id===currentImportId){alert('Sélectionnez un import différent.');return}compareImportId=id;document.getElementById('compareHint').textContent=`⇄ Comparaison active (ID ${currentImportId} vs ${id})`;loadImport(currentImportId,true)}
+  function exportPdf(){if(!currentImportId){alert('Chargez un import d\'abord.');return}window.location.href=`/export/pdf/${currentImportId}`}
+  function exportExcel(){if(!currentImportId){alert('Chargez un import d\'abord.');return}window.location.href=`/export/excel/${currentImportId}`}
+  function exportChart(){if(!charts.trend){alert('Aucun graphique à exporter.');return}const a=document.createElement('a');a.href=charts.trend.toBase64Image();a.download='tendance_ca.png';a.click()}
+
+  async function loadImport(id,isCompare){
+    currentImportId=id;
+    document.querySelectorAll('.history-table tbody tr').forEach(r=>r.classList.remove('active-row'));
+    const row=document.querySelector(`.history-table tbody tr[data-id="${id}"]`);if(row)row.classList.add('active-row');
+    const df=document.getElementById('filterFrom').value,dt=document.getElementById('filterTo').value;
+    let url=`/import/${id}`;if(df||dt)url+=`?date_from=${df}&date_to=${dt}`;
+    try{
+      const res=await fetch(url);const data=await res.json();if(data.error){alert(data.error);return}
+      if(isCompare&&compareImportId){const res2=await fetch(`/import/${compareImportId}`);const data2=await res2.json();if(!data2.error)renderCompare(data,data2)}
+      else{renderDashboard(data);await loadGrowth(id)}
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){alert('Erreur lors du chargement des données.')}
+  }
+
+  function renderCompare(d1,d2){
+    renderDashboard(d1);
+    document.getElementById('report-meta').innerHTML+=` <span style="color:var(--accent2);font-size:.8rem">⇄ vs ${d2.import_name}: CA ${fmtDH(d2.kpis.chiffre_affaires)} · ${d2.kpis.taux_livraison}% liv.</span>`;
+    if(charts.trend&&d2.trend_data&&d2.trend_data.labels.length){charts.trend.data.datasets.push({label:d2.import_name,data:d2.trend_data.values,borderColor:'#f7a26a',backgroundColor:'rgba(247,162,106,0.05)',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:true,tension:0.4});charts.trend.update()}
+  }
+
+  // Multi-file
+  function togglePanel(id){document.getElementById(id).classList.toggle('show')}
+  function handleMultiFiles(files){
+    multiFiles=Array.from(files);
+    document.getElementById('multiFileList').innerHTML=multiFiles.map(f=>`<div class="multi-file-item">📄 ${f.name} <span style="margin-left:auto;color:var(--muted)">${(f.size/1024).toFixed(1)} KB</span></div>`).join('');
+    document.getElementById('btnMultiSubmit').disabled=multiFiles.length===0;
+  }
+  const dz=document.getElementById('multiDropZone');
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleMultiFiles(e.dataTransfer.files)});
+  async function submitMultiFiles(){
+    if(!multiFiles.length)return;
+    const btn=document.getElementById('btnMultiSubmit');btn.disabled=true;btn.textContent='⬆ Importation…';
+    const fd=new FormData();multiFiles.forEach(f=>fd.append('files',f));
+    try{
+      const res=await fetch('/upload/multi',{method:'POST',body:fd,headers:{'X-CSRFToken':getCsrf()}});
+      const data=await res.json();const results=data.results||[];
+      document.getElementById('multiFileList').innerHTML=results.map(r=>r.error?`<div class="multi-file-item"><span class="err">✗</span> ${r.name} — ${r.error}</div>`:`<div class="multi-file-item"><span class="ok">✓</span> ${r.name} — ${r.total_rows} lignes</div>`).join('');
+      btn.textContent='✓ Terminé';multiFiles=[];
+      await loadHistory();
+      const ok=results.filter(r=>r.import_id);if(ok.length)loadImport(ok[ok.length-1].import_id);
+    }catch(e){btn.textContent='⚠ Erreur';btn.disabled=false}
+  }
+
+  // Merge
+  function toggleMerge(){mergeMode=!mergeMode;mergeIds.clear();document.getElementById('mergePanel').classList.toggle('show',mergeMode);loadHistory()}
+  function cancelMerge(){mergeMode=false;mergeIds.clear();document.getElementById('mergePanel').classList.remove('show');loadHistory()}
+  function toggleMergeId(id,checked){
+    if(checked===undefined){if(mergeIds.has(id))mergeIds.delete(id);else mergeIds.add(id)}
+    else{if(checked)mergeIds.add(id);else mergeIds.delete(id)}
+    const n=mergeIds.size;document.getElementById('mergeSelected').textContent=n?`${n} import(s) sélectionné(s)`:'Aucun import sélectionné';
+    document.getElementById('btnMerge').disabled=n<2;loadHistory();
+  }
+  async function submitMerge(){
+    const ids=Array.from(mergeIds);if(ids.length<2)return;
+    try{
+      const res=await fetch('/merge',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},body:JSON.stringify({import_ids:ids})});
+      const data=await res.json();if(data.error){alert(data.error);return}
+      cancelMerge();renderDashboard(data);window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){alert('Erreur lors de la fusion.')}
+  }
+
+  // Init
+  window.addEventListener('DOMContentLoaded',()=>{
+    setChartDefaults();
+    const stored=sessionStorage.getItem('analyticsData');
+    if(stored){
+      try{const data=JSON.parse(stored);renderDashboard(data);sessionStorage.removeItem('analyticsData');if(data.import_id)loadGrowth(data.import_id)}
+      catch(e){document.getElementById('no-data-screen').style.display='flex';document.getElementById('dashboard-content').style.display='none'}
+    } else {
+      fetch('/history?page=1').then(r=>r.json()).then(data=>{const list=data.items||[];if(list.length&&list[0].status==='success')loadImport(list[0].id);else document.getElementById('report-meta').textContent='Cliquez sur un import dans l\'historique'}).catch(()=>{})
+    }
+    loadHistory();
+  });
+</script>
+</body>
+</html>

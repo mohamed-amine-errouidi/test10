@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataPulse — Analyse de Ventes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0d0d14;
+    --surface2: #13131e;
+    --border: rgba(255,255,255,0.07);
+    --accent: #7c6af7;
+    --accent2: #f7a26a;
+    --accent3: #6af7c8;
+    --text: #f0effe;
+    --muted: #6b6980;
+    --danger: #f76a6a;
+    --success: #6af7c8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(124,106,247,0.12) 0%, transparent 70%);
+    top: -200px; left: -200px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(247,162,106,0.08) 0%, transparent 70%);
+    bottom: -150px; right: -150px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(5,5,8,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 16px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  .nav-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 100px 24px 60px;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 6vw, 72px);
+    text-align: center;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+
+  .hero-title span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 16px;
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.7;
+    margin-bottom: 56px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.2s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Upload zone */
+  .upload-container {
+    width: 100%;
+    max-width: 640px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.3s forwards;
+  }
+
+  #drop-zone {
+    border: 2px dashed rgba(124,106,247,0.3);
+    border-radius: 24px;
+    background: var(--surface);
+    padding: 60px 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #drop-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(124,106,247,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  #drop-zone:hover, #drop-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(124,106,247,0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 60px rgba(124,106,247,0.15);
+  }
+
+  .drop-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .drop-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .drop-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .btn-upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(124,106,247,0.4);
+  }
+
+  .btn-upload:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(124,106,247,0.5);
+  }
+
+  #file-input { display: none; }
+
+  /* Progress */
+  .progress-container {
+    display: none;
+    margin-top: 24px;
+  }
+
+  .progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: shimmer 1.5s ease infinite;
+  }
+
+  @keyframes shimmer {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+    100% { filter: brightness(1); }
+  }
+
+  /* Alert */
+  #alert-box {
+    display: none;
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.5;
+  }
+
+  #alert-box.error {
+    background: rgba(247,106,106,0.1);
+    border: 1px solid rgba(247,106,106,0.3);
+    color: var(--danger);
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Info cards */
+  .info-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .info-card {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .info-icon {
+    font-size: 20px;
+    margin-top: 2px;
+  }
+
+  .info-content {}
+
+  .info-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .info-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .template-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    transition: opacity 0.2s;
+  }
+
+  .template-link:hover { opacity: 0.7; }
+
+  /* Columns badge row */
+  .columns-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .col-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(124,106,247,0.1);
+    border: 1px solid rgba(124,106,247,0.2);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    DataPulse
+  </div>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <span style="color:var(--muted);font-size:.9rem">👤 {{ username }}</span>
+    <a href="/logout" style="color:var(--danger);font-size:.85rem;text-decoration:none;padding:.35rem .75rem;border:1px solid var(--danger);border-radius:.5rem;opacity:.8;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.8">Déconnexion</a>
+  </div>
+</nav>
+
+<main>
+  <div class="hero-label">📊 Plateforme d'Analyse E-Commerce</div>
+  <h1 class="hero-title">Transformez vos données<br>en <span>insights</span></h1>
+  <p class="hero-sub">Importez votre fichier Excel ou CSV et obtenez un tableau de bord complet en quelques secondes.</p>
+
+  <div class="upload-container">
+    <div id="drop-zone">
+      <span class="drop-icon">📁</span>
+      <div class="drop-title">Glissez votre fichier ici</div>
+      <div class="drop-sub">Formats acceptés : .xlsx, .xls, .csv — Max 16 MB</div>
+      <button class="btn-upload" onclick="document.getElementById('file-input').click()">
+        ↑ Choisir un fichier
+      </button>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+    </div>
+
+    <div class="progress-container" id="progress-container">
+      <div class="progress-label">
+        <span id="progress-text">Analyse en cours...</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <div id="alert-box">
+      <span>⚠️</span>
+      <span id="alert-msg"></span>
+    </div>
+
+    <div class="info-row">
+      <div class="info-card">
+        <div class="info-icon">📋</div>
+        <div class="info-content">
+          <div class="info-title">Colonnes requises</div>
+          <div class="columns-row">
+            <span class="col-badge">Date</span>
+            <span class="col-badge">Produit</span>
+            <span class="col-badge">Prix</span>
+            <span class="col-badge">Quantité</span>
+            <span class="col-badge">Ville</span>
+            <span class="col-badge">Statut</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">📥</div>
+        <div class="info-content">
+          <div class="info-title">Fichier exemple</div>
+          <div class="info-desc">Téléchargez un template pré-rempli pour éviter les erreurs.</div>
+          <a href="/template" class="template-link">↓ Télécharger le template</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function getCsrf() {
+    return document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('csrf_token='))?.split('=')[1]||'';
+  }
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const progressContainer = document.getElementById('progress-container');
+  const progressFill = document.getElementById('progress-fill');
+  const progressText = document.getElementById('progress-text');
+  const progressPct = document.getElementById('progress-pct');
+  const alertBox = document.getElementById('alert-box');
+  const alertMsg = document.getElementById('alert-msg');
+
+  // Drag & drop events
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadFile(file);
+  });
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) uploadFile(e.target.files[0]);
+  });
+
+  function showError(msg) {
+    alertBox.className = 'error';
+    alertMsg.textContent = msg;
+    progressContainer.style.display = 'none';
+  }
+
+  function uploadFile(file) {
+    alertBox.style.display = 'none';
+    alertBox.className = '';
+    
+    const allowedExt = ['xlsx', 'xls', 'csv'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      showError(`Format non supporté (.${ext}). Utilisez .xlsx, .xls ou .csv`);
+      return;
+    }
+
+    progressContainer.style.display = 'block';
+    const steps = ['Lecture du fichier...', 'Nettoyage des données...', 'Calcul des KPI...', 'Génération des graphiques...'];
+    let pct = 0, stepIndex = 0;
+
+    const interval = setInterval(() => {
+      pct = Math.min(pct + Math.random() * 15, 90);
+      progressFill.style.width = pct + '%';
+      progressPct.textContent = Math.round(pct) + '%';
+      if (stepIndex < steps.length - 1 && pct > (stepIndex + 1) * 22) {
+        progressText.textContent = steps[++stepIndex];
+      }
+    }, 300);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/upload', { method: 'POST', body: formData, headers: { 'X-CSRFToken': getCsrf() } })
+      .then(r => r.json())
+      .then(data => {
+        clearInterval(interval);
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+        progressFill.style.width = '100%';
+        progressPct.textContent = '100%';
+        progressText.textContent = '✅ Analyse terminée!';
+        sessionStorage.setItem('analyticsData', JSON.stringify(data));
+        setTimeout(() => { window.location.href = '/dashboard'; }, 600);
+      })
+      .catch(err => {
+        clearInterval(interval);
+        showError('Erreur réseau. Vérifiez que le serveur est démarré.');
+      });
+  }
+</script>
+</body>
+</html>

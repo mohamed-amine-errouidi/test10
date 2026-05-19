@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPulse — Connexion</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --primary-light: #818cf8;
+      --bg: #0f0e17;
+      --surface: #1a1825;
+      --surface2: #221f35;
+      --border: #2d2a45;
+      --text: #e8e6f0;
+      --muted: #8b89a0;
+      --error: #f87171;
+      --success: #34d399;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(79,70,229,.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(99,102,241,.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      box-shadow: 0 25px 60px rgba(0,0,0,.5);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border-radius: .6rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .logo-text { font-size: 1.5rem; font-weight: 700; }
+    h1 { text-align: center; font-size: 1.3rem; font-weight: 700; margin-bottom: .4rem; }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: .88rem;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+    .field { margin-bottom: 1.2rem; }
+    label { display: block; font-size: .85rem; font-weight: 500; margin-bottom: .4rem; color: var(--muted); }
+    input[type="email"] {
+      width: 100%; padding: .8rem 1rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: .6rem; color: var(--text); font-size: 1rem;
+      outline: none; transition: border-color .2s;
+    }
+    input[type="email"]:focus { border-color: var(--primary); }
+    .btn {
+      width: 100%; padding: .85rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: .75rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .alert {
+      padding: .75rem 1rem;
+      border-radius: .6rem;
+      font-size: .88rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .alert.error   { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.3); color: var(--error); }
+    .alert.success { background: rgba(52,211,153,.1);  border: 1px solid rgba(52,211,153,.3);  color: var(--success); }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: .78rem;
+      margin-top: 1.5rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">📊</div>
+      <div class="logo-text">DataPulse</div>
+    </div>
+
+    <h1>Connexion / Inscription</h1>
+    <p class="subtitle">Entrez votre email — nous vous envoyons un code à 6 chiffres pour vous connecter.</p>
+
+    <div class="alert error"   id="alertError"></div>
+    <div class="alert success" id="alertSuccess"></div>
+
+    <div class="field">
+      <label for="email">Adresse email</label>
+      <input type="email" id="email" placeholder="vous@exemple.com" autocomplete="email" autofocus />
+    </div>
+
+    <button class="btn" id="submitBtn" onclick="sendCode()">Recevoir mon code</button>
+
+    <p class="footer-note">
+      Pas de mot de passe. Pas de compte requis.<br>
+      Un code unique vous est envoyé à chaque connexion.
+    </p>
+  </div>
+
+  <script>
+    function getCsrf() {
+      return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token='))?.split('=')[1] || '';
+    }
+    function showError(msg) {
+      const el = document.getElementById('alertError');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('alertSuccess').style.display = 'none';
+    }
+    function showSuccess(msg) {
+      const el = document.getElementById('alertSuccess');
+      el.textContent = msg; el.style.display = 'block';
+      document.getElementById('alertError').style.display = 'none';
+    }
+
+    document.getElementById('email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendCode();
+    });
+
+    async function sendCode() {
+      const email = document.getElementById('email').value.trim();
+      if (!email) { showError('Veuillez entrer votre email.'); return; }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Envoi en cours…';
+
+      try {
+        const res = await fetch('/api/send-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error || 'Erreur.'); return; }
+        showSuccess('Code envoyé ! Vérifiez votre boîte mail.');
+        setTimeout(() => {
+          window.location.href = '/verify?email=' + encodeURIComponent(email);
+        }, 800);
+      } catch(err) {
+        showError('Erreur réseau. Réessayez.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Recevoir mon code';
+      }
+    }
+  </script>
+</body>
+</html>
